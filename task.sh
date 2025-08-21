@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 set -euo pipefail
 
 DB_USER="${DB_USER:?Environment variable DB_USER is not set}"
@@ -15,10 +15,10 @@ DUMP_DATA_ONLY="/tmp/${DB_PROD}_data.sql"
 
 echo "[INFO] Starting backup procedure for ShopDB at $(date)"
 
-# Full backup and restore to ShopDBReserve
+# Full backup and restore to ShopDBReserve (без --events)
 echo "[INFO] Creating full dump of $DB_PROD..."
 mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" \
-    --routines --triggers --events --databases "$DB_PROD" > "$DUMP_SCHEMA_DATA"
+    --routines --triggers --databases "$DB_PROD" > "$DUMP_SCHEMA_DATA"
 
 echo "[INFO] Restoring dump into $DB_RESERVE..."
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_RESERVE" < "$DUMP_SCHEMA_DATA"
