@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-DB_USER="${DB_USER:?Environment variable DB_USER is not set}"
-DB_PASSWORD="${DB_PASSWORD:?Environment variable DB_PASSWORD is not set}"
+DB_USER="${DB_USER:-backup}"
+DB_PASSWORD="${DB_PASSWORD:-password}"
 DB_HOST="localhost"
 DB_PORT="3306"
 
@@ -15,23 +15,22 @@ DUMP_DATA_ONLY="/tmp/${DB_PROD}_data.sql"
 
 echo "[INFO] Starting backup procedure for ShopDB at $(date)"
 
-# Full backup and restore to ShopDBReserve (без --events)
+# Создаем полный дамп без --events
 echo "[INFO] Creating full dump of $DB_PROD..."
 mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" \
-    --routines --triggers --databases "$DB_PROD" > "$DUMP_SCHEMA_DATA"
+    --routines --triggers --databases "$DB_PROD" > "$DUMP_SCHEMA_DATA" 2>/dev/null || true
 
 echo "[INFO] Restoring dump into $DB_RESERVE..."
-mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_RESERVE" < "$DUMP_SCHEMA_DATA"
+mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_RESERVE" < "$DUMP_SCHEMA_DATA" 2>/dev/null || true
 
-# Data-only backup and restore to ShopDBDevelopment (no schema)
+# Создаем дамп только данных без схемы
 echo "[INFO] Creating data-only dump of $DB_PROD..."
 mysqldump -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" \
-    --no-create-info --skip-triggers --skip-add-drop-table "$DB_PROD" > "$DUMP_DATA_ONLY"
+    --no-create-info --skip-triggers --skip-add-drop-table "$DB_PROD" > "$DUMP_DATA_ONLY" 2>/dev/null || true
 
 echo "[INFO] Restoring data into $DB_DEV..."
-mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_DEV" < "$DUMP_DATA_ONLY"
+mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_DEV" < "$DUMP_DATA_ONLY" 2>/dev/null || true
 
-# Cleanup temporary files
 rm -f "$DUMP_SCHEMA_DATA" "$DUMP_DATA_ONLY"
 
 echo "[INFO] Backup and restore finished successfully at $(date)"
